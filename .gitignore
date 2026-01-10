@@ -1,13 +1,29 @@
-# Entorno Virtual
+# --- Entorno Virtual ---
 venv/
 .env
+Include/
+Lib/
+Scripts/
+pyvenv.cfg
 
-# Python basura
+# --- Python & Cache ---
 __pycache__/
 *.py[cod]
+*$py.class
+.pytest_cache/
 
-# Modelos pesados (YOLO descarga el suyo solo)
+# --- Modelos Pesados ---
+# No subimos los archivos .pt porque ocupan mucho espacio 
+# y YOLO los descarga automáticamente si faltan.
 *.pt
 
-# Datos y Evidencias (opcional: mejor no subir fotos personales a GitHub)
+# --- Datos y Evidencias ---
+# Es mejor no subir tus fotos personales a un repositorio público.
+# GitHub no es para almacenar imágenes pesadas.
 data/captures/*.jpg
+
+# --- IDEs y Sistema ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
