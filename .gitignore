@@ -1,0 +1,13 @@
+# Entorno Virtual
+venv/
+.env
+
+# Python basura
+__pycache__/
+*.py[cod]
+
+# Modelos pesados (YOLO descarga el suyo solo)
+*.pt
+
+# Datos y Evidencias (opcional: mejor no subir fotos personales a GitHub)
+data/captures/*.jpg
