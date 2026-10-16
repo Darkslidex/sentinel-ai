@@ -1,22 +1,25 @@
-import torch
 import cv2
 import logging
 import numpy as np
-import functools
 import os
 import time
 from datetime import datetime
 from ultralytics import YOLO
 
 # ==========================================================
-# 🛡️ SENTINEL AI - SEGURIDAD Y CARGA (2026)
+# 🛡️ SENTINEL AI - SEGURIDAD Y CARGA
 # ==========================================================
-torch.load = functools.partial(torch.load, weights_only=False)
+# Los checkpoints de YOLO se deserializan con pickle, por lo que solo se
+# cargan pesos oficiales de Ultralytics (lista permitida). No se modifica
+# torch.load de forma global.
+PESOS_PERMITIDOS = {"yolov8n.pt", "yolov8s.pt", "yolov8m.pt"}
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class VisionSentinel:
     def __init__(self, model_path: str = 'yolov8n.pt'):
+        if os.path.basename(model_path) not in PESOS_PERMITIDOS:
+            raise ValueError(f"Pesos no permitidos: {model_path}. Usar solo pesos oficiales de Ultralytics.")
         try:
             self.model = YOLO(model_path)
             # Configuración de evidencias

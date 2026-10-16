@@ -59,13 +59,13 @@ python notebooks/test_fraud_engine.py
 - Patrón de evidencia con *cooldown* temporal (`save_evidence`) para no saturar disco.
 - ROI por polígono usando el punto base del bounding box (los pies del intruso) — buena decisión geométrica para detección perimetral.
 
-> ⚠️ `src/vision/detector.py` aplica un monkeypatch global `torch.load = partial(torch.load, weights_only=False)`, que desactiva la protección de PyTorch 2.6+. Funciona para cargar YOLO, pero es un riesgo si alguna vez se cargaran pesos no confiables.
+> 🔒 Los checkpoints de YOLO se deserializan con pickle: `VisionSentinel` solo acepta pesos oficiales de Ultralytics (lista permitida) y ya no modifica `torch.load` de forma global.
 
 ## 📌 Cómo continuar
 
 1. **Conectar las piezas:** alimentar el dashboard con métricas reales del `FraudDetector` y eventos reales del `VisionSentinel` en lugar de datos `np.random` y literales.
 2. **Datos reales de fraude:** reemplazar `make_classification` por un dataset real (o al menos uno público realista).
-3. **Pinnear dependencias:** declarar `torch` explícitamente y quitar el monkeypatch usando pesos confiables.
+3. **Pinnear dependencias:** fijar versiones exactas de `torch` y `ultralytics` tras probar el detector.
 4. **Tests reales:** `notebooks/test_fraud_engine.py` es un script de demo, no pruebas unitarias.
 
 ## Licencia
