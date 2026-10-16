@@ -1,73 +1,79 @@
-# 🛡️ Sentinel AI
+# Sentinel AI
 
-**Sentinel AI es una pieza de portafolio / demostración técnica que reúne tres módulos independientes de "seguridad con IA" bajo un mismo dashboard.** Muestra, en un solo proyecto, capacidad en visión por computadora, machine learning para detección de fraude y construcción de interfaces de monitoreo.
+**A portfolio demo that brings three independent "AI for security" modules under one dashboard:** computer-vision perimeter detection, a machine-learning fraud classifier and a Streamlit monitoring interface.
 
-> ⚠️ **Importante (honestidad técnica):** es un **showcase**, no un producto en producción. Los tres módulos funcionan por separado pero **no están conectados entre sí**, y parte del dashboard usa datos simulados. Ver la sección [Qué es real y qué es demo](#-qué-es-real-y-qué-es-demo) antes de evaluarlo.
+> **Status: showcase, not a production product.** The three modules work on their own but **are not connected to each other**, and part of the dashboard uses simulated data. See [What is real and what is demo](#what-is-real-and-what-is-demo) before judging it.
 
-## Los tres módulos
+## The three modules
 
-### 1. Vision Sentinel (el más sólido)
-Detector de intrusión perimetral con **YOLOv8**: vigila un stream de webcam o RTSP, define una **zona prohibida poligonal** y, cuando una persona entra en ella (se evalúa el punto de los pies con `cv2.pointPolygonTest`), guarda una captura de evidencia en `data/captures/` con un *cooldown* de 3 segundos para no saturar el disco. Código funcional y coherente.
+### 1. Vision Sentinel (the strongest piece)
+Perimeter intrusion detector built on **YOLOv8**. It watches a webcam or RTSP stream, defines a **polygonal restricted zone** and, when a person enters it, saves an evidence capture to `data/captures/` with a 3-second cooldown so the disk does not fill up. The check uses the bottom-center of the person's bounding box (the feet) with `cv2.pointPolygonTest`, which is the right geometry for perimeter detection.
 → `src/vision/detector.py`
 
 ### 2. Anti-Fraud Engine
-Clasificador de fraude con **Random Forest + SMOTE** (para balancear la clase minoritaria). Entrena, predice y reporta métricas correctamente, pero **solo sobre datos sintéticos** generados con `make_classification` (~1% de fraude). No ingiere transacciones reales.
-→ `src/fraud/engine.py` · demo en `notebooks/test_fraud_engine.py`
+Fraud classifier using **Random Forest + SMOTE** to balance the minority class. It trains, predicts and reports metrics, but **only on synthetic data** generated with `make_classification` (about 1% fraud). It does not ingest real transactions.
+→ `src/fraud/engine.py` · demo in `notebooks/test_fraud_engine.py`
 
-### 3. Command Center (dashboard Streamlit)
-Interfaz de monitoreo que muestra el feed de visión, un historial de evidencias y un "Replay Forense" que re-inyecta imágenes reales del historial. Incluye una simulación de ataque que agrega filas a una tabla en sesión.
-→ `src/api/app.py` (es una app **Streamlit**, no una API HTTP)
+### 3. Command Center (Streamlit dashboard)
+Monitoring UI with the vision feed, an evidence history and a "forensic replay" that re-injects real images from the history. It includes an attack simulation that adds rows to a session table.
+→ `src/api/app.py` (a **Streamlit** app, not an HTTP API)
 
-## 🛠️ Tech Stack (real)
+## Run it
 
-- **Python 3.10+**
-- **Visión:** Ultralytics YOLOv8 (`yolov8n.pt`), OpenCV, NumPy. PyTorch llega de forma transitiva vía `ultralytics` (no está pinned en `requirements.txt`).
-- **Fraude / ML:** scikit-learn (RandomForestClassifier), imbalanced-learn (SMOTE), pandas.
-- **Frontend:** Streamlit + Pillow.
-- **Persistencia:** ninguna base de datos; la evidencia son archivos `.jpg` en `data/captures/`.
-
-## ▶️ Uso
+Requires **Python 3.10+**.
 
 ```bash
+git clone https://github.com/Darkslidex/sentinel-ai.git
+cd sentinel-ai
 pip install -r requirements.txt
 
-# Dashboard
-streamlit run src/api/app.py
-
-# Demo del motor de fraude (entrena sobre datos sintéticos)
-python notebooks/test_fraud_engine.py
+streamlit run src/api/app.py          # dashboard
+python notebooks/test_fraud_engine.py # fraud engine demo (synthetic data)
 ```
 
-## 🔍 Qué es real y qué es demo
+The interface and console output are in Spanish.
 
-**Real / funcional:**
-- Detección de intrusión en ROI poligonal y guardado de evidencia (`VisionSentinel`).
-- Entrenamiento y métricas del `FraudDetector` (sobre datos sintéticos).
-- El "Replay Forense" re-inyecta imágenes reales del historial.
+## What is real and what is demo
 
-**Simulado / cosmético (no calculado en vivo):**
-- El gráfico de "pulso transaccional en tiempo real" se alimenta de `np.random`, no del motor de fraude.
-- Las métricas del dashboard ("Salud del Modelo 99.2%", "Precisión 0.97", "Recall 0.99", "F1 0.98") son **literales hardcodeados**.
-- "Capital Protegido" es una fórmula fija (`$13950 + nº_capturas × 500`), no un cálculo basado en eventos reales.
-- El refresco "asíncrono" es en realidad síncrono (`time.sleep(1)` + `st.rerun()`).
-- El motor de fraude **no se importa** en el dashboard: las dos piezas están desconectadas.
+**Real and working:**
+- Intrusion detection in a polygonal ROI with evidence capture (`VisionSentinel`).
+- Training and metrics of the `FraudDetector`, on synthetic data.
+- The forensic replay re-injects real images from the history.
 
-## 🧩 Arquitectura (ideas reutilizables)
+**Simulated or cosmetic (not computed live):**
+- The "real-time transaction pulse" chart is fed by `np.random`, not by the fraud engine.
+- The dashboard metrics ("model health 99.2%", "precision 0.97", "recall 0.99", "F1 0.98") are **hard-coded literals**.
+- "Protected capital" is a fixed formula (`$13950 + captures × 500`), not a calculation from real events.
+- The "async" refresh is synchronous (`time.sleep(1)` + `st.rerun()`).
+- The fraud engine is **not imported** by the dashboard: the two pieces are disconnected.
 
-- Separación modular limpia por dominio: `src/vision`, `src/fraud`, `src/api`.
-- `FraudDetector` bien encapsulado (estado `is_trained`, reutiliza el modelo y el SMOTE, logging en el core).
-- Patrón de evidencia con *cooldown* temporal (`save_evidence`) para no saturar disco.
-- ROI por polígono usando el punto base del bounding box (los pies del intruso) — buena decisión geométrica para detección perimetral.
+## About the fraud metrics
 
-> 🔒 Los checkpoints de YOLO se deserializan con pickle: `VisionSentinel` solo acepta pesos oficiales de Ultralytics (lista permitida) y ya no modifica `torch.load` de forma global.
+SMOTE is applied **only to the training split**; the test split keeps the original class distribution (about 1% fraud), so synthetic samples never leak into evaluation. An earlier version balanced the data before splitting, which inflated the results; that was fixed.
 
-## 📌 Cómo continuar
+On the bundled synthetic data both the plain model and the SMOTE model score close to 1.00, because `make_classification` produces easily separable classes. The demo shows the pattern (split first, balance only the training data, report per-class metrics), not real-world fraud performance.
 
-1. **Conectar las piezas:** alimentar el dashboard con métricas reales del `FraudDetector` y eventos reales del `VisionSentinel` en lugar de datos `np.random` y literales.
-2. **Datos reales de fraude:** reemplazar `make_classification` por un dataset real (o al menos uno público realista).
-3. **Pinnear dependencias:** fijar versiones exactas de `torch` y `ultralytics` tras probar el detector.
-4. **Tests reales:** `notebooks/test_fraud_engine.py` es un script de demo, no pruebas unitarias.
+## Security
 
-## Licencia
+YOLO checkpoints are deserialized with pickle, so `VisionSentinel` only accepts official Ultralytics weights (an allowlist) and does not patch `torch.load` globally.
 
-Proyecto de portafolio — **Félix Lezama**.
+## Architecture
+
+- Clean modular split by domain: `src/vision`, `src/fraud`, `src/api`.
+- Well-encapsulated `FraudDetector` (`is_trained` state, reusable model and SMOTE, logging in the core).
+- Evidence capture with a time-based cooldown (`save_evidence`).
+
+## Next steps
+
+1. **Connect the pieces:** feed the dashboard with real `FraudDetector` metrics and real `VisionSentinel` events instead of `np.random` and literals.
+2. **Real fraud data:** replace `make_classification` with a realistic public dataset.
+3. **Pin dependencies:** fix exact `torch` and `ultralytics` versions after testing the detector.
+4. **Real tests:** `notebooks/test_fraud_engine.py` is a demo script, not a unit test suite.
+
+## Stack
+
+Python · Ultralytics YOLOv8 · OpenCV · NumPy · scikit-learn · imbalanced-learn · pandas · Streamlit
+
+## License
+
+Portfolio project by **Félix Lezama**.

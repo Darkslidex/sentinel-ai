@@ -34,14 +34,16 @@ class FraudDetector:
     def train(self, X: pd.DataFrame, y: pd.Series):
         """
         Entrena el modelo robusto después de balancear los datos.
+        SMOTE se aplica solo al conjunto de entrenamiento: el conjunto de prueba
+        conserva la distribución original para que las métricas no se inflen.
         """
-        X_bal, y_bal = self.balance_data(X, y)
         X_train, X_test, y_train, y_test = train_test_split(
-            X_bal, y_bal, test_size=0.2, random_state=42
+            X, y, test_size=0.2, random_state=42, stratify=y
         )
+        X_train_bal, y_train_bal = self.balance_data(X_train, y_train)
         
         logging.info("Entrenando Random Forest Classifier...")
-        self.model.fit(X_train, y_train)
+        self.model.fit(X_train_bal, y_train_bal)
         self.is_trained = True
         
         # Evaluación técnica
